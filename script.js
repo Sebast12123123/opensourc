@@ -543,4 +543,49 @@ saveGoalBtn.addEventListener('click', function () {
         const options = { year: 'numeric', month: 'short', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
     }
+    let zoomChartInstance = null;
+
+window.openChartModal = function(chartId) {
+
+    const modal = document.getElementById('chartModal');
+    const zoomCanvas = document.getElementById('zoomChart');
+
+    modal.style.display = 'block';
+
+    if (zoomChartInstance) {
+        zoomChartInstance.destroy();
+    }
+
+    const originalChart =
+        chartId === 'expenseChart'
+            ? expenseChart
+            : balanceLineChart;
+
+    zoomChartInstance = new Chart(
+        zoomCanvas,
+        {
+            type: originalChart.config.type,
+            data: JSON.parse(JSON.stringify(originalChart.data)),
+            options: JSON.parse(JSON.stringify(originalChart.options))
+        }
+    );
+};
+
+window.closeChartModal = function() {
+
+    document.getElementById('chartModal').style.display = 'none';
+
+    if (zoomChartInstance) {
+        zoomChartInstance.destroy();
+        zoomChartInstance = null;
+    }
+};
+window.onclick = function(event) {
+
+    const modal = document.getElementById('chartModal');
+
+    if (event.target === modal) {
+        closeChartModal();
+    }
+};
 });

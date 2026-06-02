@@ -1,3 +1,10 @@
+.charts-container
+.chart-card
+.chart-header
+.zoom-btn
+.chart-modal
+.chart-modal-content
+.close-modal
 :root {
     /* Light Theme Colors */
     --primary-color: #4361ee;
@@ -581,4 +588,79 @@ select {
     background: none;
     padding-right: 2rem;
     /* space for the icon */
+}
+.charts-container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.chart-card {
+    flex: 1;
+    min-width: 350px;
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+}
+
+.chart-card canvas {
+    max-height: 250px;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.zoom-btn {
+    border: none;
+    background: #8b5cf6;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.zoom-btn:hover {
+    opacity: 0.85;
+}
+.chart-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+}
+
+.chart-modal-content {
+    background: white;
+    width: 80%;
+    max-width: 900px;
+    height: 80%;
+    margin: 40px auto;
+    padding: 20px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 40px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    z-index: 10000;
+}
+.chart-modal-content {
+    position: relative;
+    padding-top: 60px;
+}
+
+#zoomChart {
+    width: 100% !important;
+    height: 100% !important;
 }
