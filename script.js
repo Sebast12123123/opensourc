@@ -1,3 +1,29 @@
+import {
+    Chart,
+    ArcElement,
+    Tooltip,
+    Legend,
+    PieController,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Filler
+} from "https://cdn.jsdelivr.net/npm/chart.js@4.5.1/+esm";
+
+Chart.register(
+    ArcElement,
+    Tooltip,
+    Legend,
+    PieController,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Filler
+);
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('form');
     const descriptionInput = document.getElementById('description');
@@ -12,8 +38,25 @@ document.addEventListener('DOMContentLoaded', function () {
     const filterTypeInput = document.getElementById('filter-type');
     const filterCategoryInput = document.getElementById('filter-category');
     const themeToggle = document.getElementById('theme-toggle');
+    
+    const goalNameInput = document.getElementById('goal-name');
+    const goalAmountInput = document.getElementById('goal-amount');
+    const saveGoalBtn = document.getElementById('save-goal-btn');
+
+    const goalTitle = document.getElementById('goal-title');
+    const savedAmount = document.getElementById('saved-amount');
+    const goalTotal = document.getElementById('goal-total');
+    const remainingAmount = document.getElementById('remaining-amount');
+    const progressFill = document.getElementById('progress-fill');
+    const progressPercentage = document.getElementById('progress-percentage');
+
+let goal = JSON.parse(localStorage.getItem('goal')) || null;
+
+
 
     let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+    let expenseChart = null;
+    let balanceLineChart = null;
 
     const savedTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -41,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
         updateLocalStorage();
         updateUI();
         resetForm();
-        showSuccessMessage('Transaction added successfully!');
+        showSuccessMessage('Transaccion añadida correctamente');
     });
 
     filterTypeInput.addEventListener('change', updateUI);
@@ -56,6 +99,30 @@ document.addEventListener('DOMContentLoaded', function () {
             localStorage.setItem('theme', 'light');
         }
     });
+
+saveGoalBtn.addEventListener('click', function () {
+
+    const name = goalNameInput.value.trim();
+    const amount = parseFloat(goalAmountInput.value);
+
+    if (name === '' || amount <= 0) {
+        showErrorMessage('Completa correctamente la meta');
+        return;
+    }
+
+    goal = {
+        name,
+        amount 
+    };
+
+    localStorage.setItem('goal', JSON.stringify(goal));
+
+    updateGoalUI();
+
+    showSuccessMessage('Meta guardada correctamente');
+    });
+
+
 
     function init() {
         updateUI();
@@ -80,6 +147,10 @@ document.addEventListener('DOMContentLoaded', function () {
         displayTransactions(filteredTransactions);
         updateBalance();
         updateSummary();
+        updateGoalUI();
+        updateChart();
+        updateBalanceLineChart();
+
     }
 
     function filterTransactions() {
@@ -97,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function () {
         transactionsList.innerHTML = '';
 
         if (transactionsToDisplay.length === 0) {
-            transactionsList.innerHTML = '<li class="no-transactions"><i class="fas fa-coins"></i> No transactions found</li>';
+            transactionsList.innerHTML = '<li class="no-transactions"><i class="fas fa-coins"></i> No se encontraron transacciones </li>';
             return;
         }
 
@@ -112,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     <div class="transaction-category">${transaction.category}</div>
                     <div class="transaction-date">${formatDate(transaction.date)}</div>
                 </div>
-                <div class="transaction-amount">${sign}₹${Math.abs(transaction.amount).toFixed(2)}</div>
+                <div class="transaction-amount">${sign}$${Math.abs(transaction.amount).toFixed(2)}</div>
                 <button class="delete-btn" data-id="${transaction.id}" aria-label="Delete transaction">
                     <i class="fas fa-trash-alt"></i>
                 </button>
@@ -128,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 removeTransaction(id);
                 updateLocalStorage();
                 updateUI();
-                showSuccessMessage('Transaction deleted!');
+                showSuccessMessage('Transaccion eliminada');
             });
         });
     }
@@ -139,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
         );
 
         const total = amounts.reduce((acc, item) => acc + item, 0).toFixed(2);
-        balanceElement.textContent = `₹${total}`;
+        balanceElement.textContent = `$${total}`;
 
         if (total > 0) {
             balanceElement.style.color = 'var(--income-color)';
@@ -161,8 +232,233 @@ document.addEventListener('DOMContentLoaded', function () {
             .reduce((acc, transaction) => acc + transaction.amount, 0)
             .toFixed(2);
 
-        incomeTotalElement.textContent = `₹${income}`;
-        expenseTotalElement.textContent = `₹${expense}`;
+        incomeTotalElement.textContent = `$${income}`;
+        expenseTotalElement.textContent = `$${expense}`;
+    }
+
+    function updateGoalUI() {
+
+        if (!goal) {
+            return;
+        }
+
+        const balance = transactions
+            .map(transaction =>
+                transaction.type === 'income'
+                    ? transaction.amount
+                    : -transaction.amount
+            )
+            .reduce((acc, item) => acc + item, 0);
+
+       const remaining = Math.max(goal.amount - balance, 0);
+
+        let percentage = (balance / goal.amount) * 100;
+
+        if (percentage < 0) {
+            percentage = 0;
+        }
+
+        if (percentage > 100) {
+            percentage = 100;
+        }
+
+        goalTitle.textContent = goal.name;
+
+        savedAmount.textContent = `$${balance.toFixed(2)}`;
+        goalTotal.textContent = `$${goal.amount.toFixed(2)}`;
+
+        remainingAmount.textContent =
+            remaining > 0
+                ? `$${remaining.toFixed(2)}`
+                : '$0.00';
+
+        progressPercentage.textContent =
+            `${percentage.toFixed(0)}% completado`;
+
+        progressFill.style.width = `${percentage}%`;
+
+       
+        if (percentage >= 80) {
+            progressFill.style.background = '#22c55e';
+        }
+        else if (percentage >= 50) {
+            progressFill.style.background = '#facc15';
+        }
+        else {
+            progressFill.style.background = '#8b5cf6';
+        }
+
+     
+        if (percentage >= 100) {
+            progressPercentage.textContent =
+                '🎉 ¡Meta alcanzada!';
+        }
+    }
+
+    function updateChart() {
+
+        const categories = {};
+
+       transactions.forEach(transaction => {
+
+                if (!categories[transaction.category]) {
+                    categories[transaction.category] = 0;
+                }
+
+                categories[transaction.category] += transaction.amount;
+            });
+
+        const labels = Object.keys(categories);
+        const data = Object.values(categories);
+
+        const ctx = document.getElementById('expenseChart');
+
+        if (!ctx) {
+            return;
+        }
+
+        if (expenseChart) {
+            expenseChart.destroy();
+        }
+
+        expenseChart = new Chart(ctx, {
+            type: 'pie',
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    data: data,
+
+                    backgroundColor: [
+                        '#8b5cf6',
+                        '#06b6d4',
+                        '#22c55e',
+                        '#facc15',
+                        '#f97316',
+                        '#ef4444',
+                        '#ec4899',
+                        '#6366f1'
+                    ],
+
+                    borderWidth: 2
+                }]
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+                        position: 'bottom'
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+                                return `$${context.parsed.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    function updateBalanceLineChart() {
+
+        const ctx = document.getElementById('balanceLineChart');
+
+        if (!ctx) {
+            return;
+        }
+
+        const sortedTransactions = [...transactions].sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
+
+        let runningBalance = 0;
+
+        const labels = [];
+        const data = [];
+
+        sortedTransactions.forEach(transaction => {
+
+            if (transaction.type === 'income') {
+                runningBalance += transaction.amount;
+            } else {
+                runningBalance -= transaction.amount;
+            }
+
+            labels.push(formatDate(transaction.date));
+            data.push(runningBalance.toFixed(2));
+        });
+
+        if (balanceLineChart) {
+            balanceLineChart.destroy();
+        }
+
+        balanceLineChart = new Chart(ctx, {
+
+            type: 'line',
+
+            data: {
+
+                labels: labels,
+
+                datasets: [{
+
+                    label: 'Balance',
+
+                    data: data,
+
+                    borderColor: '#8b5cf6',
+
+                    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+
+                    fill: true,
+
+                    tension: 0.3,
+
+                    pointBackgroundColor: '#8b5cf6',
+
+                    pointRadius: 4
+                }]
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+                        display: true
+                    },
+
+                    tooltip: {
+
+                        callbacks: {
+
+                            label: function(context) {
+                                return `Balance: $${context.parsed.y}`;
+                            }
+                        }
+                    }
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
     }
 
     function resetForm() {
@@ -173,25 +469,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function validateForm() {
         if (descriptionInput.value.trim() === '') {
-            showErrorMessage('Please enter a description');
+            showErrorMessage('Porfavor ingresa una descripcion');
             descriptionInput.focus();
             return false;
         }
 
         if (amountInput.value === '' || parseFloat(amountInput.value) <= 0) {
-            showErrorMessage('Please enter a valid amount greater than 0');
+            showErrorMessage('Por favor ingresa un monto valido');
             amountInput.focus();
             return false;
         }
 
         if (dateInput.value === '') {
-            showErrorMessage('Please select a date');
+            showErrorMessage('Por favor selecciona una fecha');
             dateInput.focus();
             return false;
         }
 
         if (categoryInput.value === '') {
-            showErrorMessage('Please select a category');
+            showErrorMessage('Porfavor selecciona una categoria');
             categoryInput.focus();
             return false;
         }
@@ -240,7 +536,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function generateId() {
-        return Date.now() + Math.floor(Math.random() * 1000); // ensures unique numeric ID
+        return Date.now() + Math.floor(Math.random() * 1000); 
     }
 
     function formatDate(dateString) {
