@@ -1,6 +1,5 @@
 # Expense Tracker Web Application
 
-<img width="1903" height="868" alt="image" src="https://github.com/user-attachments/assets/26bb5b1b-1118-485b-b28c-e1ce926e6d77" />
  <!-- Add a screenshot if available -->
 
 A modern, responsive expense tracking application built with HTML, CSS, and JavaScript that helps users manage their finances effectively.
